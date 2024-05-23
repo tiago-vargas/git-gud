@@ -1,0 +1,4 @@
+pub const APP_ID: &str = @APP_ID@;
+pub const VERSION: &str = @VERSION@;
+pub const BUILD_TYPE: &str = @BUILD_TYPE@;
+pub const PKG_DATA_DIR: &str = @PKG_DATA_DIR@;

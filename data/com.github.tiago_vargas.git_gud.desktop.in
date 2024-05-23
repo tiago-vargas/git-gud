@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Git Gud
+Exec=git-gud
+Icon=com.github.tiago_vargas.git_gud
+Terminal=false
+Type=Application
+Categories=GNOME;GTK;Development;
+StartupNotify=true

@@ -1,0 +1,9 @@
+# Cargo build files
+/target/
+
+# Meson build files
+/_build/
+
+# Flatpak build files
+/.flatpak/
+/.flatpak-builder/

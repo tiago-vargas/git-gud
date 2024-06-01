@@ -12,11 +12,21 @@ impl SimpleComponent for Model {
 	type Output = ();
 
 	view! {
-		gtk::Label {
-			set_label: "Hello, World!",
-			set_margin_all: 4,
-			set_css_classes: &["title-1"],
-			set_vexpand: true,
+		adw::StatusPage {
+			set_icon_name: Some("folder-symbolic"),
+			set_title: "No Repository Selected",
+
+			gtk::CenterBox {
+				// `StatusPage` takes 1 child widget, which expands to its width.
+				// Having just the button as the child, makes it stretched just too much.
+				// Wraping in a `CenterBox` is a workaround to make the button small.
+				#[wrap(Some)]
+				set_center_widget = &gtk::Button {
+					set_label: "Select Repository…",
+					add_css_class: "suggested-action",
+					add_css_class: "pill",
+				},
+			},
 		}
 	}
 

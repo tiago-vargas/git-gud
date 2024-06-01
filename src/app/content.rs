@@ -1,14 +1,22 @@
-use gtk::prelude::*;
+use gtk::{gio, prelude::*};
 use relm4::prelude::*;
 
-pub(crate) struct Model;
+pub(crate) struct Model {
+	selected_repository: Option<gio::File>,
+}
 
 pub(crate) struct Init;
+
+#[derive(Debug)]
+pub(crate) enum Input {
+	ShowOpenRepoDialog,
+	PlaceholderAction(gio::File),
+}
 
 #[relm4::component(pub(crate))]
 impl SimpleComponent for Model {
 	type Init = Init;
-	type Input = ();
+	type Input = Input;
 	type Output = ();
 
 	view! {
@@ -25,6 +33,10 @@ impl SimpleComponent for Model {
 					set_label: "Select Repository…",
 					add_css_class: "suggested-action",
 					add_css_class: "pill",
+
+					connect_clicked[sender] => move |_| {
+						sender.input(Self::Input::ShowOpenRepoDialog)
+					},
 				},
 			},
 		}
@@ -33,16 +45,46 @@ impl SimpleComponent for Model {
 	fn init(
 		_init: Self::Init,
 		root: Self::Root,
-		_sender: ComponentSender<Self>,
+		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
-		let model = Self;
+		let model = Self {
+			selected_repository: None,
+		};
 
 		let widgets = view_output!();
 
 		ComponentParts { model, widgets }
 	}
 
-	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
-		let () = message;
+	fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
+		match message {
+			Self::Input::ShowOpenRepoDialog => {
+				let app = relm4::main_application();
+				let main_window = app
+					.windows()
+					.first()
+					.expect(
+						"Event should have been triggered by last focused window, thus first item",
+					)
+					.clone();
+
+				let dialog = gtk::FileDialog::builder()
+					.title("Open Repository")
+					.modal(true)
+					.build();
+				dialog.select_folder(
+					Some(&main_window),
+					None::<&gio::Cancellable>,
+					move |result| {
+						if let Ok(selected_folder) = result {
+							sender.input(Self::Input::PlaceholderAction(selected_folder));
+						}
+					},
+				)
+			}
+			Self::Input::PlaceholderAction(repository) => {
+				self.selected_repository = Some(repository);
+			}
+		}
 	}
 }

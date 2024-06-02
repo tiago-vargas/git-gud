@@ -20,26 +20,34 @@ impl SimpleComponent for Model {
 	type Output = ();
 
 	view! {
-		adw::StatusPage {
-			set_icon_name: Some("folder-symbolic"),
-			set_title: "No Repository Selected",
-			set_description: Some("Use the button below to open a repository."),
+		adw::Bin {
+			if model.selected_repository.is_none() {
+				adw::StatusPage {
+					set_icon_name: Some("folder-symbolic"),
+					set_title: "No Repository Selected",
+					set_description: Some("Use the button below to open a repository."),
 
-			gtk::CenterBox {
-				// `StatusPage` takes 1 child widget, which expands to its width.
-				// Having just the button as the child, makes it stretched just too much.
-				// Wraping in a `CenterBox` is a workaround to make the button small.
-				#[wrap(Some)]
-				set_center_widget = &gtk::Button {
-					set_label: "Open Repository",
-					add_css_class: "suggested-action",
-					add_css_class: "pill",
+					gtk::CenterBox {
+						// `StatusPage` takes 1 child widget, which expands to its width.
+						// Having just the button as the child, makes it stretched just too much.
+						// Wraping in a `CenterBox` is a workaround to make the button small.
+						#[wrap(Some)]
+						set_center_widget = &gtk::Button {
+							set_label: "Open Repository",
+							add_css_class: "suggested-action",
+							add_css_class: "pill",
 
-					connect_clicked[sender] => move |_| {
-						sender.input(Self::Input::ShowOpenRepoDialog)
+							connect_clicked[sender] => move |_| {
+								sender.input(Self::Input::ShowOpenRepoDialog)
+							},
+						},
 					},
-				},
-			},
+				}
+			} else {
+				adw::StatusPage {
+					#[watch] set_title: model.selected_repository.clone().unwrap().path().unwrap().to_str().unwrap(),
+				}
+			}
 		}
 	}
 

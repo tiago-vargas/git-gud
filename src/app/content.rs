@@ -68,8 +68,10 @@ impl SimpleComponent for Model {
 					)
 					.clone();
 
+				let home = std::env::var("HOME").expect("System should have set `HOME` on login");
 				let dialog = gtk::FileDialog::builder()
 					.title("Open Repository")
+					.initial_folder(&gio::File::for_path(home))
 					.modal(true)
 					.build();
 				dialog.select_folder(

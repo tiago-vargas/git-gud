@@ -1,38 +1,114 @@
-use gtk::prelude::*;
+use gtk::{gio, prelude::*};
 use relm4::prelude::*;
 
-pub(crate) struct Model;
+use std::path;
+
+pub(crate) struct Model {
+	repository_was_selected: bool,
+}
 
 pub(crate) struct Init;
+
+#[derive(Debug)]
+pub(crate) enum Input {
+	ShowOpenRepoDialog,
+	IndicateRepositoryWasSelected,
+}
+
+#[derive(Debug)]
+pub(crate) enum Output {
+	SetHeaderBarSubtitle(path::PathBuf),
+}
 
 #[relm4::component(pub(crate))]
 impl SimpleComponent for Model {
 	type Init = Init;
-	type Input = ();
-	type Output = ();
+	type Input = Input;
+	type Output = Output;
 
 	view! {
-		gtk::Label {
-			set_label: "Hello, World!",
-			set_margin_all: 4,
-			set_css_classes: &["title-1"],
-			set_vexpand: true,
+		adw::Bin {
+			if model.repository_was_selected {
+				adw::StatusPage {
+					set_title: "Stub Page",
+					set_description: Some("Repository was selected."),
+				}
+			} else {
+				adw::StatusPage {
+					set_icon_name: Some("folder-symbolic"),
+					set_title: "No Repository Selected",
+
+					gtk::CenterBox {
+						// `StatusPage` takes 1 child widget, which expands to its width.
+						// Having just the button as the child, makes it stretched just too much.
+						// Wraping in a `CenterBox` is a workaround to make the button small.
+						#[wrap(Some)]
+						set_center_widget = &gtk::Button {
+							set_label: "Select Repository…",
+							add_css_class: "suggested-action",
+							add_css_class: "pill",
+
+							connect_clicked[sender] => move |_| {
+								sender.input(Self::Input::ShowOpenRepoDialog)
+							},
+						},
+					},
+				}
+			}
 		}
 	}
 
 	fn init(
 		_init: Self::Init,
 		root: Self::Root,
-		_sender: ComponentSender<Self>,
+		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
-		let model = Self;
+		let model = Self {
+			repository_was_selected: false,
+		};
 
 		let widgets = view_output!();
 
 		ComponentParts { model, widgets }
 	}
 
-	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
-		let () = message;
+	fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
+		match message {
+			Self::Input::ShowOpenRepoDialog => {
+				let app = relm4::main_application();
+				let main_window = app
+					.windows()
+					.first()
+					.expect(
+						"Event should have been triggered by last focused window, thus first item",
+					)
+					.clone();
+
+				let home = std::env::var("HOME").expect("System should have set `HOME` on login");
+				let dialog = gtk::FileDialog::builder()
+					.title("Open Repository")
+					.initial_folder(&gio::File::for_path(home))
+					.modal(true)
+					.build();
+				dialog.select_folder(
+					Some(&main_window),
+					None::<&gio::Cancellable>,
+					move |result| {
+						if let Ok(selected_folder) = result {
+							let path = selected_folder
+								.path()
+								.expect("Folder was opened via file-chooser, so should have a path");
+							sender
+								.output(Self::Output::SetHeaderBarSubtitle(path))
+								.expect("Receiver should not have been dropped");
+							sender.input(Self::Input::IndicateRepositoryWasSelected);
+						}
+					},
+				)
+			}
+			Self::Input::IndicateRepositoryWasSelected => {
+				self.repository_was_selected = true;
+			}
+		}
 	}
 }

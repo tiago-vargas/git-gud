@@ -1,6 +1,8 @@
 use adw::prelude::*;
 use relm4::prelude::*;
 
+use std::{ffi, path};
+
 use crate::config::BUILD_TYPE;
 
 mod actions;
@@ -9,15 +11,21 @@ mod modals;
 mod settings;
 
 pub(crate) struct Model {
+	header_bar_subtitle: ffi::OsString,
 	content: Controller<content::Model>,
 }
 
 pub(crate) struct Init;
 
+#[derive(Debug)]
+pub(crate) enum Input {
+	SetHeaderBarSubtitle(path::PathBuf),
+}
+
 #[relm4::component(pub(crate))]
 impl SimpleComponent for Model {
 	type Init = Init;
-	type Input = ();
+	type Input = Input;
 	type Output = ();
 
 	menu! {
@@ -49,6 +57,12 @@ impl SimpleComponent for Model {
 
 			adw::ToolbarView {
 				add_top_bar = &adw::HeaderBar {
+					#[wrap(Some)]
+					set_title_widget = &adw::WindowTitle {
+						set_title: "Git Gud",
+						#[watch] set_subtitle?: model.header_bar_subtitle.to_str(),
+					},
+
 					pack_end = &gtk::MenuButton {
 						set_icon_name: "open-menu-symbolic",
 						set_menu_model: Some(&primary_menu),
@@ -68,8 +82,16 @@ impl SimpleComponent for Model {
 	) -> ComponentParts<Self> {
 		let content = content::Model::builder()
 			.launch(content::Init)
-			.detach();
-		let model = Model { content };
+			.forward(sender.input_sender(), |output| match output {
+				content::Output::SetHeaderBarSubtitle(folder) => {
+					Self::Input::SetHeaderBarSubtitle(folder)
+				},
+			});
+		let placeholder_subtitle = ffi::OsString::default();
+		let model = Model {
+			header_bar_subtitle: placeholder_subtitle,
+			content,
+		};
 
 		let widgets = view_output!();
 
@@ -80,7 +102,14 @@ impl SimpleComponent for Model {
 	}
 
 	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
-		let () = message;
+		match message {
+			Self::Input::SetHeaderBarSubtitle(path) => {
+				self.header_bar_subtitle = path
+					.file_name()
+					.expect("Chosen repo should have a name")
+					.to_os_string()
+			}
+		}
 	}
 
 	fn shutdown(&mut self, widgets: &mut Self::Widgets, _output: relm4::Sender<Self::Output>) {

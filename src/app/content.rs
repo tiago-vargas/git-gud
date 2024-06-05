@@ -1,23 +1,27 @@
 use gtk::{gio, prelude::*};
 use relm4::prelude::*;
 
-pub(crate) struct Model {
-	selected_repository: Option<gio::File>,
-}
+use std::path;
+
+pub(crate) struct Model;
 
 pub(crate) struct Init;
 
 #[derive(Debug)]
 pub(crate) enum Input {
 	ShowOpenRepoDialog,
-	PlaceholderAction(gio::File),
+}
+
+#[derive(Debug)]
+pub(crate) enum Output {
+	SetHeaderBarSubtitle(path::PathBuf),
 }
 
 #[relm4::component(pub(crate))]
 impl SimpleComponent for Model {
 	type Init = Init;
 	type Input = Input;
-	type Output = ();
+	type Output = Output;
 
 	view! {
 		adw::StatusPage {
@@ -47,9 +51,7 @@ impl SimpleComponent for Model {
 		root: Self::Root,
 		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
-		let model = Self {
-			selected_repository: None,
-		};
+		let model = Self;
 
 		let widgets = view_output!();
 
@@ -79,13 +81,15 @@ impl SimpleComponent for Model {
 					None::<&gio::Cancellable>,
 					move |result| {
 						if let Ok(selected_folder) = result {
-							sender.input(Self::Input::PlaceholderAction(selected_folder));
+							let path = selected_folder
+								.path()
+								.expect("Folder was opened via file-chooser, so should have a path");
+							sender
+								.output(Self::Output::SetHeaderBarSubtitle(path))
+								.expect("Receiver should not have been dropped");
 						}
 					},
 				)
-			}
-			Self::Input::PlaceholderAction(repository) => {
-				self.selected_repository = Some(repository);
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-use gtk::prelude::*;
+use gtk::{pango, prelude::*};
 use relm4::{factory::FactoryView, prelude::*};
 
 pub(crate) struct Model {
@@ -21,6 +21,8 @@ impl FactoryComponent for Model {
 		gtk::Label {
 			set_text: &self.branch_name,
 			set_halign: gtk::Align::Start,
+			set_ellipsize: pango::EllipsizeMode::End,
+			set_tooltip_text: Some(&self.branch_name),
 		}
 	}
 

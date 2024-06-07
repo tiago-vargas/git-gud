@@ -98,10 +98,12 @@ impl SimpleComponent for Model {
 							let path = selected_folder
 								.path()
 								.expect("Folder was opened via file-chooser, so should have a path");
-							sender
-								.output(Self::Output::SetHeaderBarSubtitle(path))
-								.expect("Receiver should not have been dropped");
-							sender.input(Self::Input::IndicateRepositoryWasSelected);
+							if is_repository(&path) {
+								sender
+									.output(Self::Output::SetHeaderBarSubtitle(path))
+									.expect("Receiver should not have been dropped");
+								sender.input(Self::Input::IndicateRepositoryWasSelected);
+							}
 						}
 					},
 				)
@@ -111,4 +113,8 @@ impl SimpleComponent for Model {
 			}
 		}
 	}
+}
+
+fn is_repository(path: &path::PathBuf) -> bool {
+	git::Repository::open(path).is_ok()
 }

@@ -1,4 +1,5 @@
 use adw::prelude::*;
+use gtk::gio;
 use relm4::prelude::*;
 
 use std::{ffi, path};
@@ -12,6 +13,7 @@ mod settings;
 
 pub(crate) struct Model {
 	header_bar_subtitle: ffi::OsString,
+	repository: Option<gio::File>,
 	content: Controller<content::Model>,
 }
 
@@ -19,6 +21,7 @@ pub(crate) struct Init;
 
 #[derive(Debug)]
 pub(crate) enum Input {
+	SetRepository(gio::File),
 	SetHeaderBarSubtitle(path::PathBuf),
 }
 
@@ -55,22 +58,43 @@ impl SimpleComponent for Model {
 					set_transient_for: Some(&main_window),  // Apparently, this isn't necessary
 				},
 
-			adw::ToolbarView {
-				add_top_bar = &adw::HeaderBar {
-					#[wrap(Some)]
-					set_title_widget = &adw::WindowTitle {
-						set_title: "Git Gud",
-						#[watch] set_subtitle?: model.header_bar_subtitle.to_str(),
-					},
+			adw::OverlaySplitView {
+				#[watch] set_show_sidebar: model.repository.is_some(),
 
-					pack_end = &gtk::MenuButton {
-						set_icon_name: "open-menu-symbolic",
-						set_menu_model: Some(&primary_menu),
+				#[wrap(Some)]
+				set_sidebar = &adw::NavigationPage {
+					set_title: "Branches",
+
+					adw::ToolbarView {
+						add_top_bar = &adw::HeaderBar {
+							pack_end = &gtk::MenuButton {
+								set_icon_name: "open-menu-symbolic",
+								set_menu_model: Some(&primary_menu),
+							},
+						},
+
+						adw::StatusPage {
+							set_title: "Sidebar",
+						},
 					},
 				},
 
-				#[wrap(Some)]
-				set_content = model.content.widget(),
+				adw::NavigationPage {
+					set_title: "Content",
+
+					adw::ToolbarView {
+						add_top_bar = &adw::HeaderBar {
+							#[wrap(Some)]
+							set_title_widget = &adw::WindowTitle {
+								set_title: "Git Gud",
+								#[watch] set_subtitle?: model.header_bar_subtitle.to_str(),
+							},
+						},
+
+						#[wrap(Some)]
+						set_content = model.content.widget(),
+					},
+				}
 			},
 		}
 	}
@@ -83,13 +107,12 @@ impl SimpleComponent for Model {
 		let content = content::Model::builder()
 			.launch(content::Init)
 			.forward(sender.input_sender(), |output| match output {
-				content::Output::SetHeaderBarSubtitle(folder) => {
-					Self::Input::SetHeaderBarSubtitle(folder)
-				},
+				content::Output::Repository(folder) => Self::Input::SetRepository(folder),
 			});
 		let placeholder_subtitle = ffi::OsString::default();
 		let model = Model {
 			header_bar_subtitle: placeholder_subtitle,
+			repository: None,
 			content,
 		};
 
@@ -101,8 +124,15 @@ impl SimpleComponent for Model {
 		ComponentParts { model, widgets }
 	}
 
-	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+	fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
 		match message {
+			Self::Input::SetRepository(folder) => {
+				let path = folder
+					.path()
+					.expect("Folder was opened via file-chooser, so should have a path");
+				sender.input(Self::Input::SetHeaderBarSubtitle(path));
+				self.repository = Some(folder);
+			}
 			Self::Input::SetHeaderBarSubtitle(path) => {
 				self.header_bar_subtitle = path
 					.file_name()

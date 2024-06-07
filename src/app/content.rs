@@ -17,7 +17,7 @@ pub(crate) enum Input {
 
 #[derive(Debug)]
 pub(crate) enum Output {
-	SetHeaderBarSubtitle(path::PathBuf),
+	Repository(gio::File),
 }
 
 #[relm4::component(pub(crate))]
@@ -100,7 +100,7 @@ impl SimpleComponent for Model {
 								.expect("Folder was opened via file-chooser, so should have a path");
 							if is_repository(&path) {
 								sender
-									.output(Self::Output::SetHeaderBarSubtitle(path))
+									.output(Self::Output::Repository(selected_folder))
 									.expect("Receiver should not have been dropped");
 								sender.input(Self::Input::IndicateRepositoryWasSelected);
 							}

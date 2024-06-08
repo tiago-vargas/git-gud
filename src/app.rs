@@ -8,7 +8,9 @@ use crate::config::BUILD_TYPE;
 
 mod actions;
 mod branch_row;
+mod commit_row;
 mod content;
+mod log;
 mod modals;
 mod settings;
 
@@ -188,7 +190,7 @@ impl SimpleComponent for Model {
 				let branch_name = &row.branch_name;
 				let repo = self.repository.as_ref().unwrap().path();
 				let file = gio::File::for_path(repo);
-				self.content.sender().send(content::Input::PrintCommitMessages(file, String::clone(branch_name))).unwrap();
+				self.content.sender().send(content::Input::ShowLog(file, String::clone(branch_name))).unwrap();
 			}
 		}
 	}

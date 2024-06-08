@@ -1,10 +1,14 @@
-use gtk::{gio, prelude::*};
+use adw::{gio, prelude::*};
 use relm4::prelude::*;
 
 use std::path;
 
+use crate::app::log;
+
 pub(crate) struct Model {
 	repository_was_selected: bool,
+	should_show_log: bool,
+	log: Controller<log::Model>,
 }
 
 pub(crate) struct Init;
@@ -13,7 +17,7 @@ pub(crate) struct Init;
 pub(crate) enum Input {
 	ShowOpenRepoDialog,
 	IndicateRepositoryWasSelected,
-	PrintCommitMessages(gio::File, String),
+	ShowLog(gio::File, String),
 }
 
 #[derive(Debug)]
@@ -30,9 +34,17 @@ impl SimpleComponent for Model {
 	view! {
 		adw::Bin {
 			if model.repository_was_selected {
-				adw::StatusPage {
-					set_title: "Stub Page",
-					set_description: Some("Repository was selected."),
+				adw::Bin {
+					if model.should_show_log {
+						adw::Bin {
+							model.log.widget(),
+						}
+					} else {
+						adw::StatusPage {
+							set_title: "Stub Page",
+							set_description: Some("Repository was selected."),
+						}
+					}
 				}
 			} else {
 				adw::StatusPage {
@@ -64,8 +76,13 @@ impl SimpleComponent for Model {
 		root: Self::Root,
 		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
+		let log = log::Model::builder()
+			.launch(log::Init)
+			.detach();
 		let model = Self {
 			repository_was_selected: false,
+			should_show_log: false,
+			log,
 		};
 
 		let widgets = view_output!();
@@ -112,7 +129,7 @@ impl SimpleComponent for Model {
 			Self::Input::IndicateRepositoryWasSelected => {
 				self.repository_was_selected = true;
 			}
-			Self::Input::PrintCommitMessages(repo, branch) => {
+			Self::Input::ShowLog(repo, branch) => {
 				let path = repo
 					.path()
 					.expect("Folder was opened via file-chooser, so should have a path");
@@ -126,8 +143,16 @@ impl SimpleComponent for Model {
 					let id = id.unwrap();
 					let commit = repo.find_commit(id).unwrap();
 
-					println!("### {}", commit.message().unwrap());
+					self.log
+					.sender()
+					.send(log::Input::AddCommitRow(
+						commit.summary().as_ref().unwrap().to_string(),
+						commit.body().as_ref().unwrap().to_string(),
+					))
+					.unwrap();
 				}
+
+				self.should_show_log = true;
 			}
 		}
 	}

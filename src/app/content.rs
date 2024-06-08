@@ -104,7 +104,6 @@ impl SimpleComponent for Model {
 									.output(Self::Output::Repository(selected_folder.clone()))
 									.expect("Receiver should not have been dropped");
 								sender.input(Self::Input::IndicateRepositoryWasSelected);
-								sender.input(Self::Input::PrintCommitMessages(selected_folder, String::from("dev")));  // FIXME
 							}
 						}
 					},

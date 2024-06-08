@@ -27,6 +27,7 @@ pub(crate) enum Input {
 	SetHeaderBarSubtitle(path::PathBuf),
 	ListBranches,
 	AddBranchRow(String),
+	ShowLog(usize),
 }
 
 #[relm4::component(pub(crate))]
@@ -81,6 +82,12 @@ impl SimpleComponent for Model {
 							#[local_ref]
 							branch_list_box -> gtk::ListBox {
 								add_css_class: "navigation-sidebar",
+
+								connect_row_selected[sender] => move |_this, row| {
+									if let Some(row) = row {
+										sender.input(Self::Input::ShowLog(row.index() as usize));
+									}
+								}
 							},
 						},
 					},
@@ -174,6 +181,14 @@ impl SimpleComponent for Model {
 					.branches
 					.guard()
 					.push_front(branch_row::Init { branch_name });
+			}
+			Self::Input::ShowLog(index) => {
+				// TODO: Improve
+				let row = self.branches.get(index).unwrap();
+				let branch_name = &row.branch_name;
+				let repo = self.repository.as_ref().unwrap().path();
+				let file = gio::File::for_path(repo);
+				self.content.sender().send(content::Input::PrintCommitMessages(file, String::clone(branch_name))).unwrap();
 			}
 		}
 	}

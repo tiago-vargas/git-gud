@@ -2,7 +2,7 @@ use gtk::{pango, prelude::*};
 use relm4::{factory::FactoryView, prelude::*};
 
 pub(crate) struct Model {
-	branch_name: String,
+	pub(crate) branch_name: String,
 }
 
 pub(crate) struct Init {

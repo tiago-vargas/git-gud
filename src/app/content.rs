@@ -13,6 +13,7 @@ pub(crate) struct Init;
 pub(crate) enum Input {
 	ShowOpenRepoDialog,
 	IndicateRepositoryWasSelected,
+	PrintCommitMessages(gio::File, String),
 }
 
 #[derive(Debug)]
@@ -100,9 +101,10 @@ impl SimpleComponent for Model {
 								.expect("Folder was opened via file-chooser, so should have a path");
 							if is_repository(&path) {
 								sender
-									.output(Self::Output::Repository(selected_folder))
+									.output(Self::Output::Repository(selected_folder.clone()))
 									.expect("Receiver should not have been dropped");
 								sender.input(Self::Input::IndicateRepositoryWasSelected);
+								sender.input(Self::Input::PrintCommitMessages(selected_folder, String::from("dev")));  // FIXME
 							}
 						}
 					},
@@ -110,6 +112,23 @@ impl SimpleComponent for Model {
 			}
 			Self::Input::IndicateRepositoryWasSelected => {
 				self.repository_was_selected = true;
+			}
+			Self::Input::PrintCommitMessages(repo, branch) => {
+				let path = repo
+					.path()
+					.expect("Folder was opened via file-chooser, so should have a path");
+				let repo = git::Repository::open(path).unwrap();
+				let dev = repo.find_branch(&branch, git::BranchType::Local).unwrap();
+				let latest_commit = dev.get().peel_to_commit().unwrap();
+				let mut revwalker = repo.revwalk().unwrap();
+				revwalker.push(latest_commit.id()).unwrap();
+
+				for id in revwalker {
+					let id = id.unwrap();
+					let commit = repo.find_commit(id).unwrap();
+
+					println!("### {}", commit.message().unwrap());
+				}
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-use gtk::prelude::*;
+use adw::prelude::*;
 use relm4::{factory::FactoryVecDeque, prelude::*};
 
 use super::commit_row;
@@ -23,13 +23,19 @@ impl SimpleComponent for Model {
 
 	view! {
 		gtk::ScrolledWindow {
+		// 	adw::BreakpointBin {
 			adw::Clamp {
-				set_margin_all: 12,
-				// VMargin = 36
+				gtk::Box {
+					// This prevents the list from being expanded till the bottom.
+					set_orientation: gtk::Orientation::Vertical,
 
-				#[local_ref]
-				commits_list_box -> gtk::ListBox {
-					add_css_class: "boxed-list",
+					// set_margin_all: 12,
+					// VMargin = 36
+
+					#[local_ref]
+					commits_list_box -> gtk::ListBox {
+						add_css_class: "boxed-list",
+					},
 				},
 			},
 		}

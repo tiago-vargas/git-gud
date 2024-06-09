@@ -12,7 +12,7 @@ pub(crate) struct Init;
 #[derive(Debug)]
 pub(crate) enum Input {
 	// ListCommits,
-	AddCommitRow(String, String),
+	AddCommitRow(String, Option<String>),
 }
 
 #[relm4::component(pub(crate))]
@@ -24,6 +24,9 @@ impl SimpleComponent for Model {
 	view! {
 		gtk::ScrolledWindow {
 			adw::Clamp {
+				set_margin_all: 12,
+				// VMargin = 36
+
 				#[local_ref]
 				commits_list_box -> gtk::ListBox {
 					add_css_class: "boxed-list",
@@ -51,7 +54,10 @@ impl SimpleComponent for Model {
 	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
 		match message {
 			Self::Input::AddCommitRow(summary, description) => {
-				self.commits.guard().push_back(commit_row::Init { summary, description});
+				self.commits.guard().push_back(commit_row::Init {
+					summary,
+					description,
+				});
 			}
 		}
 	}

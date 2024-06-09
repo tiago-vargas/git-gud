@@ -147,10 +147,11 @@ impl SimpleComponent for Model {
 					.sender()
 					.send(log::Input::AddCommitRow(
 						commit.summary().as_ref().unwrap().to_string(),
-						commit.body().as_ref().unwrap().to_string(),
+						commit.body().map(String::from),
 					))
 					.unwrap();
 				}
+
 
 				self.should_show_log = true;
 			}

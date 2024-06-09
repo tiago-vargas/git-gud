@@ -1,14 +1,15 @@
 use adw::prelude::*;
+use gtk::glib;
 use relm4::{factory::FactoryView, prelude::*};
 
 pub(crate) struct Model {
 	summary: String,
-	description: String,
+	description: Option<String>,
 }
 
 pub(crate) struct Init {
 	pub(crate) summary: String,
-	pub(crate) description: String,
+	pub(crate) description: Option<String>,
 }
 
 #[relm4::factory(pub(crate))]
@@ -20,12 +21,17 @@ impl FactoryComponent for Model {
 	type ParentWidget = gtk::ListBox;
 
 	view! {
-		adw::ExpanderRow {
-			set_title: &self.summary,
+		// adw::ExpanderRow {
+		// 	set_title: &glib::markup_escape_text(&self.summary),
 
-			add_row = &adw::ActionRow {
-				set_title: &self.description,
-			},
+		// 	set_enable_expansion: self.description.is_some(),
+		// 	add_row = &adw::ActionRow {
+		// 		set_title?: &self.description.as_ref().map(|o| glib::markup_escape_text(o)),
+		// 	},
+		// }
+		adw::ActionRow {
+			set_title: &glib::markup_escape_text(&self.summary),
+			set_subtitle?: &self.description.as_ref().map(|o| glib::markup_escape_text(o)),
 		}
 	}
 

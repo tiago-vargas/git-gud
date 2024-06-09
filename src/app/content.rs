@@ -17,6 +17,7 @@ pub(crate) enum Input {
 	ShowOpenRepoDialog,
 	IndicateRepositoryWasSelected,
 	ShowLog(path::PathBuf, String),
+	PrintStatus(path::PathBuf),
 }
 
 #[derive(Debug)]
@@ -165,6 +166,16 @@ impl SimpleComponent for Model {
 				}
 
 				self.content_to_show = Content::BranchHistory;
+			}
+			Self::Input::PrintStatus(repo) => {
+				let repo = git::Repository::open(repo).unwrap();
+				let mut options = git::StatusOptions::default();
+				options.include_untracked(true);
+				let status = repo.statuses(Some(&mut options)).unwrap();
+
+				for entry in status.iter() {
+					println!("### {:?}, {:?}", entry.path().unwrap(), entry.status());
+				}
 			}
 		}
 	}

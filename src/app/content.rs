@@ -4,7 +4,7 @@ use relm4::prelude::*;
 use std::path;
 
 pub(crate) struct Model {
-	repository_was_selected: bool,
+	content_to_show: Content,
 }
 
 pub(crate) struct Init;
@@ -28,31 +28,34 @@ impl SimpleComponent for Model {
 
 	view! {
 		adw::Bin {
-			if model.repository_was_selected {
-				adw::StatusPage {
-					set_title: "Stub Page",
-					set_description: Some("Repository was selected."),
+			match model.content_to_show {
+				Content::RepositoryWasSelected => {
+					adw::StatusPage {
+						set_title: "Stub Page",
+						set_description: Some("Repository was selected."),
+					}
 				}
-			} else {
-				adw::StatusPage {
-					set_icon_name: Some("folder-symbolic"),
-					set_title: "No Repository Selected",
+				Content::NoRepository => {
+					adw::StatusPage {
+						set_icon_name: Some("folder-symbolic"),
+						set_title: "No Repository Selected",
 
-					gtk::CenterBox {
-						// `StatusPage` takes 1 child widget, which expands to its width.
-						// Having just the button as the child, makes it stretched just too much.
-						// Wraping in a `CenterBox` is a workaround to make the button small.
-						#[wrap(Some)]
-						set_center_widget = &gtk::Button {
-							set_label: "Select Repository…",
-							add_css_class: "suggested-action",
-							add_css_class: "pill",
+						gtk::CenterBox {
+							// `StatusPage` takes 1 child widget, which expands to its width.
+							// Having just the button as the child, makes it stretched just too much.
+							// Wraping in a `CenterBox` is a workaround to make the button small.
+							#[wrap(Some)]
+							set_center_widget = &gtk::Button {
+								set_label: "Select Repository…",
+								add_css_class: "suggested-action",
+								add_css_class: "pill",
 
-							connect_clicked[sender] => move |_| {
-								sender.input(Self::Input::ShowOpenRepoDialog)
+								connect_clicked[sender] => move |_| {
+									sender.input(Self::Input::ShowOpenRepoDialog)
+								},
 							},
 						},
-					},
+					}
 				}
 			}
 		}
@@ -64,7 +67,7 @@ impl SimpleComponent for Model {
 		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
 		let model = Self {
-			repository_was_selected: false,
+			content_to_show: Content::NoRepository,
 		};
 
 		let widgets = view_output!();
@@ -109,10 +112,15 @@ impl SimpleComponent for Model {
 				)
 			}
 			Self::Input::IndicateRepositoryWasSelected => {
-				self.repository_was_selected = true;
+				self.content_to_show = Content::RepositoryWasSelected;
 			}
 		}
 	}
+}
+
+enum Content {
+	NoRepository,
+	RepositoryWasSelected,
 }
 
 fn is_repository(path: &path::PathBuf) -> bool {

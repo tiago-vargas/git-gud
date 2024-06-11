@@ -17,7 +17,7 @@ pub(crate) enum Input {
 
 #[derive(Debug)]
 pub(crate) enum Output {
-	Repository(gio::File),
+	Repository(path::PathBuf),
 }
 
 #[relm4::component(pub(crate))]
@@ -103,7 +103,7 @@ impl SimpleComponent for Model {
 								.expect("Folder was opened via file-chooser, so should have a path");
 							if is_repository(&path) {
 								sender
-									.output(Self::Output::Repository(selected_folder))
+									.output(Self::Output::Repository(path))
 									.expect("Receiver should not have been dropped");
 								sender.input(Self::Input::IndicateRepositoryWasSelected);
 							}

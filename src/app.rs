@@ -1,5 +1,4 @@
 use adw::prelude::*;
-use gtk::gio;
 use relm4::{factory::FactoryVecDeque, prelude::*};
 
 use std::{ffi, path};
@@ -23,7 +22,7 @@ pub(crate) struct Init;
 
 #[derive(Debug)]
 pub(crate) enum Input {
-	SetRepository(gio::File),
+	SetRepository(path::PathBuf),
 	SetHeaderBarSubtitle(path::PathBuf),
 	ListBranches,
 	AddBranchRow(String),
@@ -117,7 +116,7 @@ impl SimpleComponent for Model {
 		let content = content::Model::builder()
 			.launch(content::Init)
 			.forward(sender.input_sender(), |output| match output {
-				content::Output::Repository(folder) => Self::Input::SetRepository(folder),
+				content::Output::Repository(path) => Self::Input::SetRepository(path),
 			});
 		let placeholder_subtitle = ffi::OsString::default();
 		let model = Model {
@@ -138,16 +137,12 @@ impl SimpleComponent for Model {
 
 	fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
 		match message {
-			Self::Input::SetRepository(folder) => {
-				let path = folder
-					.path()
-					.expect("Folder was opened via file-chooser, so should have a path");
-				let repo = git::Repository::open(&path);
-				if let Ok(repo) = repo {
-					self.repository = Some(repo);
-					sender.input(Self::Input::SetHeaderBarSubtitle(path));
-					sender.input(Self::Input::ListBranches);
-				}
+			Self::Input::SetRepository(path) => {
+				let repo = git::Repository::open(&path)
+					.expect("Repo was already validated from the file-chooser callback");
+				self.repository = Some(repo);
+				sender.input(Self::Input::SetHeaderBarSubtitle(path));
+				sender.input(Self::Input::ListBranches);
 			}
 			Self::Input::SetHeaderBarSubtitle(path) => {
 				self.header_bar_subtitle = path

@@ -26,6 +26,7 @@ pub(crate) enum Input {
 	SetHeaderBarSubtitle(path::PathBuf),
 	ListBranches,
 	AddBranchRow(String),
+	ShowLog(usize),
 }
 
 #[relm4::component(pub(crate))]
@@ -80,6 +81,12 @@ impl SimpleComponent for Model {
 							#[local_ref]
 							branch_list_box -> gtk::ListBox {
 								add_css_class: "navigation-sidebar",
+
+								connect_row_selected[sender] => move |_this, row| {
+									if let Some(row) = row {
+										sender.input(Self::Input::ShowLog(row.index() as usize));
+									}
+								}
 							},
 						},
 					},
@@ -169,6 +176,17 @@ impl SimpleComponent for Model {
 					.branches
 					.guard()
 					.push_front(branch_row::Init { branch_name });
+			}
+			Self::Input::ShowLog(index) => {
+				let branch_row = self
+					.branches
+					.get(index)
+					.expect("Index should've been gotten from a sidebar row");
+				let branch_name = &branch_row.branch_name;
+				self.content
+					.sender()
+					.send(content::Input::ShowFakeLog(branch_name.clone()))
+					.expect("Receiver should not have been dropped");
 			}
 		}
 	}

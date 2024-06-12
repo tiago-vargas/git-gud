@@ -3,8 +3,11 @@ use relm4::prelude::*;
 
 use std::path;
 
+mod log;
+
 pub(crate) struct Model {
 	content_to_show: Content,
+	branch_history: Controller<log::Model>,
 }
 
 pub(crate) struct Init;
@@ -13,6 +16,7 @@ pub(crate) struct Init;
 pub(crate) enum Input {
 	ShowOpenRepoDialog,
 	IndicateRepositoryWasSelected,
+	ShowFakeLog(String),
 }
 
 #[derive(Debug)]
@@ -57,6 +61,11 @@ impl SimpleComponent for Model {
 						},
 					}
 				}
+				Content::BranchHistory => {
+					adw::Bin {
+						model.branch_history.widget(),
+					}
+				}
 			}
 		}
 	}
@@ -66,8 +75,12 @@ impl SimpleComponent for Model {
 		root: Self::Root,
 		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
+		let branch_history = log::Model::builder()
+			.launch(log::Init)
+			.detach();
 		let model = Self {
 			content_to_show: Content::NoRepository,
+			branch_history,
 		};
 
 		let widgets = view_output!();
@@ -114,6 +127,18 @@ impl SimpleComponent for Model {
 			Self::Input::IndicateRepositoryWasSelected => {
 				self.content_to_show = Content::RepositoryWasSelected;
 			}
+			Self::Input::ShowFakeLog(branch) => {
+				for i in 1..=3 {
+					let summary = format!("Commit {i} of branch {branch}");
+					let description = String::from("Blah blah blah.");
+					self.branch_history
+						.sender()
+						.send(log::Input::AddCommitRow(summary, description))
+						.expect("Receiver should not have been dropped");
+				}
+
+				self.content_to_show = Content::BranchHistory;
+			}
 		}
 	}
 }
@@ -121,6 +146,7 @@ impl SimpleComponent for Model {
 enum Content {
 	NoRepository,
 	RepositoryWasSelected,
+	BranchHistory,
 }
 
 fn is_repository(path: &path::PathBuf) -> bool {

@@ -23,11 +23,17 @@ impl SimpleComponent for Model {
 	view! {
 		gtk::ScrolledWindow {
 			adw::Clamp {
-				set_margin_all: 12,
+				gtk::Box {
+					// This `Box` prevents the list background from being the size of the whole view.
+					// It's only noticeable in small enough lists.
+					set_orientation: gtk::Orientation::Vertical,
 
-				#[local_ref]
-				commits_list_box -> gtk::ListBox {
-					add_css_class: "boxed-list",
+					set_margin_all: 12,
+
+					#[local_ref]
+					commits_list_box -> gtk::ListBox {
+						add_css_class: "boxed-list",
+					},
 				},
 			},
 		}

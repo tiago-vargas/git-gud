@@ -128,6 +128,11 @@ impl SimpleComponent for Model {
 				self.content_to_show = Content::RepositoryWasSelected;
 			}
 			Self::Input::ShowFakeLog(branch) => {
+				self.branch_history
+					.sender()
+					.send(log::Input::ClearList)
+					.expect("Receiver should not have been dropped");
+
 				for i in 1..=3 {
 					let summary = format!("Commit {i} of branch {branch}");
 					let description = String::from("Blah blah blah.");

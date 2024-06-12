@@ -11,6 +11,7 @@ pub(crate) struct Init;
 
 #[derive(Debug)]
 pub(crate) enum Input {
+	ClearList,
 	AddCommitRow(String, String),
 }
 
@@ -57,6 +58,7 @@ impl SimpleComponent for Model {
 
 	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
 		match message {
+			Self::Input::ClearList => self.commits.guard().clear(),
 			Self::Input::AddCommitRow(summary, description) => {
 				let row = commit_row::Init {
 					summary,

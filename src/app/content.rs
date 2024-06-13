@@ -16,7 +16,7 @@ pub(crate) struct Init;
 pub(crate) enum Input {
 	ShowOpenRepoDialog,
 	IndicateRepositoryWasSelected,
-	ShowFakeLog(String),
+	ShowLog(path::PathBuf, String),
 }
 
 #[derive(Debug)]
@@ -127,15 +127,45 @@ impl SimpleComponent for Model {
 			Self::Input::IndicateRepositoryWasSelected => {
 				self.content_to_show = Content::RepositoryWasSelected;
 			}
-			Self::Input::ShowFakeLog(branch) => {
+			Self::Input::ShowLog(path, branch_name) => {
 				self.branch_history
 					.sender()
 					.send(log::Input::ClearList)
 					.expect("Receiver should not have been dropped");
 
-				for i in 1..=3 {
-					let summary = format!("Commit {i} of branch {branch}");
-					let description = String::from("Blah blah blah.");
+				let repo = git::Repository::open(path)
+					.expect("Repo should have been validated in the file-chooser callback");
+				let branch = repo
+					.find_branch(&branch_name, git::BranchType::Local)
+					.or_else(|_| repo.find_branch(&branch_name, git::BranchType::Remote))
+					.expect("Branch name should have been gotten from the sidebar");
+				let latest_commit = branch
+					.get()
+					.peel_to_commit()
+					.expect("Branch should have a commit");
+				let mut revwalk = repo
+					.revwalk()
+					.expect("Should be able to traverse commit graph");
+				revwalk
+					.push(latest_commit.id())
+					.expect("ID was gotten from `Commit.id()`, so it should work");
+
+				for id in revwalk {
+					let id = id.expect("Should be able to iterate over revwalk");
+					let commit = repo
+						.find_commit(id)
+						.expect("ID was gotten from revwalk, so it should work");
+
+					let summary = commit
+						.summary()
+						.as_ref()
+						.expect("Commit summary should be valid UTF-8")
+						.to_string();
+					let description = commit
+						.body()
+						.as_ref()
+						.expect("Commit description should be valid UTF-8")
+						.to_string();
 					self.branch_history
 						.sender()
 						.send(log::Input::AddCommitRow(summary, description))

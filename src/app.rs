@@ -183,9 +183,17 @@ impl SimpleComponent for Model {
 					.get(index)
 					.expect("Index should've been gotten from a sidebar row");
 				let branch_name = &branch_row.branch_name;
+				let repo_path = self
+					.repository
+					.as_ref()
+					.expect("Should only show log of repo")
+					.path();
 				self.content
 					.sender()
-					.send(content::Input::ShowFakeLog(branch_name.clone()))
+					.send(content::Input::ShowLog(
+						path::PathBuf::from(repo_path),
+						String::clone(branch_name),
+					))
 					.expect("Receiver should not have been dropped");
 			}
 		}

@@ -1,4 +1,5 @@
 use adw::prelude::*;
+use gtk::glib;
 use relm4::{factory::FactoryView, prelude::*};
 
 pub(crate) struct Model {
@@ -21,8 +22,8 @@ impl FactoryComponent for Model {
 
 	view! {
 		adw::ActionRow {
-			set_title?: &self.summary,
-			set_subtitle?: &self.description,
+			set_title?: &self.summary.as_ref().map(|s| glib::markup_escape_text(s)),
+			set_subtitle?: &self.description.as_ref().map(|d| glib::markup_escape_text(d)),
 		}
 	}
 

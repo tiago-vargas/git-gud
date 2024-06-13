@@ -2,13 +2,13 @@ use adw::prelude::*;
 use relm4::{factory::FactoryView, prelude::*};
 
 pub(crate) struct Model {
-	summary: String,
-	description: String,
+	summary: Option<String>,
+	description: Option<String>,
 }
 
 pub(crate) struct Init {
-	pub(crate) summary: String,
-	pub(crate) description: String,
+	pub(crate) summary: Option<String>,
+	pub(crate) description: Option<String>,
 }
 
 #[relm4::factory(pub(crate))]
@@ -21,8 +21,8 @@ impl FactoryComponent for Model {
 
 	view! {
 		adw::ActionRow {
-			set_title: &self.summary,
-			set_subtitle: &self.description,
+			set_title?: &self.summary,
+			set_subtitle?: &self.description,
 		}
 	}
 

@@ -12,7 +12,7 @@ pub(crate) struct Init;
 #[derive(Debug)]
 pub(crate) enum Input {
 	ClearList,
-	AddCommitRow(String, String),
+	AddCommitRow(Option<String>, Option<String>),
 }
 
 #[relm4::component(pub(crate))]

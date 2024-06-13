@@ -156,16 +156,8 @@ impl SimpleComponent for Model {
 						.find_commit(id)
 						.expect("ID was gotten from revwalk, so it should work");
 
-					let summary = commit
-						.summary()
-						.as_ref()
-						.expect("Commit summary should be valid UTF-8")
-						.to_string();
-					let description = commit
-						.body()
-						.as_ref()
-						.expect("Commit description should be valid UTF-8")
-						.to_string();
+					let summary = commit.summary().map(String::from);
+					let description = commit.body().map(String::from);
 					self.branch_history
 						.sender()
 						.send(log::Input::AddCommitRow(summary, description))

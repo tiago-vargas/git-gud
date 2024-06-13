@@ -1,12 +1,15 @@
-use gtk::{pango, prelude::*};
+use adw::prelude::*;
+use gtk::glib;
 use relm4::{factory::FactoryView, prelude::*};
 
 pub(crate) struct Model {
-	pub(crate) branch_name: String,
+	summary: Option<String>,
+	description: Option<String>,
 }
 
 pub(crate) struct Init {
-	pub(crate) branch_name: String,
+	pub(crate) summary: Option<String>,
+	pub(crate) description: Option<String>,
 }
 
 #[relm4::factory(pub(crate))]
@@ -18,17 +21,16 @@ impl FactoryComponent for Model {
 	type ParentWidget = gtk::ListBox;
 
 	view! {
-		gtk::Label {
-			set_text: &self.branch_name,
-			set_halign: gtk::Align::Start,
-			set_ellipsize: pango::EllipsizeMode::End,
-			set_tooltip_text: Some(&self.branch_name),
+		adw::ActionRow {
+			set_title?: &self.summary.as_ref().map(|s| glib::markup_escape_text(s)),
+			set_subtitle?: &self.description.as_ref().map(|d| glib::markup_escape_text(d)),
 		}
 	}
 
 	fn init_model(init: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
 		Self {
-			branch_name: init.branch_name,
+			summary: init.summary,
+			description: init.description,
 		}
 	}
 

@@ -1,5 +1,4 @@
 use adw::prelude::*;
-use gtk::gio;
 use relm4::{factory::FactoryVecDeque, prelude::*};
 
 use std::{ffi, path};
@@ -23,10 +22,11 @@ pub(crate) struct Init;
 
 #[derive(Debug)]
 pub(crate) enum Input {
-	SetRepository(gio::File),
+	SetRepository(path::PathBuf),
 	SetHeaderBarSubtitle(path::PathBuf),
 	ListBranches,
 	AddBranchRow(String),
+	ShowLog(usize),
 }
 
 #[relm4::component(pub(crate))]
@@ -81,6 +81,12 @@ impl SimpleComponent for Model {
 							#[local_ref]
 							branch_list_box -> gtk::ListBox {
 								add_css_class: "navigation-sidebar",
+
+								connect_row_selected[sender] => move |_this, row| {
+									if let Some(row) = row {
+										sender.input(Self::Input::ShowLog(row.index() as usize));
+									}
+								}
 							},
 						},
 					},
@@ -117,7 +123,7 @@ impl SimpleComponent for Model {
 		let content = content::Model::builder()
 			.launch(content::Init)
 			.forward(sender.input_sender(), |output| match output {
-				content::Output::Repository(folder) => Self::Input::SetRepository(folder),
+				content::Output::Repository(path) => Self::Input::SetRepository(path),
 			});
 		let placeholder_subtitle = ffi::OsString::default();
 		let model = Model {
@@ -138,16 +144,12 @@ impl SimpleComponent for Model {
 
 	fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
 		match message {
-			Self::Input::SetRepository(folder) => {
-				let path = folder
-					.path()
-					.expect("Folder was opened via file-chooser, so should have a path");
-				let repo = git::Repository::open(&path);
-				if let Ok(repo) = repo {
-					self.repository = Some(repo);
-					sender.input(Self::Input::SetHeaderBarSubtitle(path));
-					sender.input(Self::Input::ListBranches);
-				}
+			Self::Input::SetRepository(path) => {
+				let repo = git::Repository::open(&path)
+					.expect("Repo was already validated from the file-chooser callback");
+				self.repository = Some(repo);
+				sender.input(Self::Input::SetHeaderBarSubtitle(path));
+				sender.input(Self::Input::ListBranches);
 			}
 			Self::Input::SetHeaderBarSubtitle(path) => {
 				self.header_bar_subtitle = path
@@ -174,6 +176,25 @@ impl SimpleComponent for Model {
 					.branches
 					.guard()
 					.push_front(branch_row::Init { branch_name });
+			}
+			Self::Input::ShowLog(index) => {
+				let branch_row = self
+					.branches
+					.get(index)
+					.expect("Index should've been gotten from a sidebar row");
+				let branch_name = &branch_row.branch_name;
+				let repo_path = self
+					.repository
+					.as_ref()
+					.expect("Should only show log of repo")
+					.path();
+				self.content
+					.sender()
+					.send(content::Input::ShowLog(
+						path::PathBuf::from(repo_path),
+						String::clone(branch_name),
+					))
+					.expect("Receiver should not have been dropped");
 			}
 		}
 	}

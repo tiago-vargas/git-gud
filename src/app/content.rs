@@ -3,8 +3,11 @@ use relm4::prelude::*;
 
 use std::path;
 
+mod log;
+
 pub(crate) struct Model {
-	repository_was_selected: bool,
+	content_to_show: Content,
+	branch_history: Controller<log::Model>,
 }
 
 pub(crate) struct Init;
@@ -13,11 +16,12 @@ pub(crate) struct Init;
 pub(crate) enum Input {
 	ShowOpenRepoDialog,
 	IndicateRepositoryWasSelected,
+	ShowLog(path::PathBuf, String),
 }
 
 #[derive(Debug)]
 pub(crate) enum Output {
-	Repository(gio::File),
+	Repository(path::PathBuf),
 }
 
 #[relm4::component(pub(crate))]
@@ -28,31 +32,39 @@ impl SimpleComponent for Model {
 
 	view! {
 		adw::Bin {
-			if model.repository_was_selected {
-				adw::StatusPage {
-					set_title: "Stub Page",
-					set_description: Some("Repository was selected."),
+			match model.content_to_show {
+				Content::RepositoryWasSelected => {
+					adw::StatusPage {
+						set_title: "Stub Page",
+						set_description: Some("Repository was selected."),
+					}
 				}
-			} else {
-				adw::StatusPage {
-					set_icon_name: Some("folder-symbolic"),
-					set_title: "No Repository Selected",
+				Content::NoRepository => {
+					adw::StatusPage {
+						set_icon_name: Some("folder-symbolic"),
+						set_title: "No Repository Selected",
 
-					gtk::CenterBox {
-						// `StatusPage` takes 1 child widget, which expands to its width.
-						// Having just the button as the child, makes it stretched just too much.
-						// Wraping in a `CenterBox` is a workaround to make the button small.
-						#[wrap(Some)]
-						set_center_widget = &gtk::Button {
-							set_label: "Select Repository…",
-							add_css_class: "suggested-action",
-							add_css_class: "pill",
+						gtk::CenterBox {
+							// `StatusPage` takes 1 child widget, which expands to its width.
+							// Having just the button as the child, makes it stretched just too much.
+							// Wraping in a `CenterBox` is a workaround to make the button small.
+							#[wrap(Some)]
+							set_center_widget = &gtk::Button {
+								set_label: "Select Repository…",
+								add_css_class: "suggested-action",
+								add_css_class: "pill",
 
-							connect_clicked[sender] => move |_| {
-								sender.input(Self::Input::ShowOpenRepoDialog)
+								connect_clicked[sender] => move |_| {
+									sender.input(Self::Input::ShowOpenRepoDialog)
+								},
 							},
 						},
-					},
+					}
+				}
+				Content::BranchHistory => {
+					adw::Bin {
+						model.branch_history.widget(),
+					}
 				}
 			}
 		}
@@ -63,8 +75,12 @@ impl SimpleComponent for Model {
 		root: Self::Root,
 		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
+		let branch_history = log::Model::builder()
+			.launch(log::Init)
+			.detach();
 		let model = Self {
-			repository_was_selected: false,
+			content_to_show: Content::NoRepository,
+			branch_history,
 		};
 
 		let widgets = view_output!();
@@ -100,7 +116,7 @@ impl SimpleComponent for Model {
 								.expect("Folder was opened via file-chooser, so should have a path");
 							if is_repository(&path) {
 								sender
-									.output(Self::Output::Repository(selected_folder))
+									.output(Self::Output::Repository(path))
 									.expect("Receiver should not have been dropped");
 								sender.input(Self::Input::IndicateRepositoryWasSelected);
 							}
@@ -109,10 +125,55 @@ impl SimpleComponent for Model {
 				)
 			}
 			Self::Input::IndicateRepositoryWasSelected => {
-				self.repository_was_selected = true;
+				self.content_to_show = Content::RepositoryWasSelected;
+			}
+			Self::Input::ShowLog(path, branch_name) => {
+				self.branch_history
+					.sender()
+					.send(log::Input::ClearList)
+					.expect("Receiver should not have been dropped");
+
+				let repo = git::Repository::open(path)
+					.expect("Repo should have been validated in the file-chooser callback");
+				let branch = repo
+					.find_branch(&branch_name, git::BranchType::Local)
+					.or_else(|_| repo.find_branch(&branch_name, git::BranchType::Remote))
+					.expect("Branch name should have been gotten from the sidebar");
+				let latest_commit = branch
+					.get()
+					.peel_to_commit()
+					.expect("Branch should have a commit");
+				let mut revwalk = repo
+					.revwalk()
+					.expect("Should be able to traverse commit graph");
+				revwalk
+					.push(latest_commit.id())
+					.expect("ID was gotten from `Commit.id()`, so it should work");
+
+				for id in revwalk {
+					let id = id.expect("Should be able to iterate over revwalk");
+					let commit = repo
+						.find_commit(id)
+						.expect("ID was gotten from revwalk, so it should work");
+
+					let summary = commit.summary().map(String::from);
+					let description = commit.body().map(String::from);
+					self.branch_history
+						.sender()
+						.send(log::Input::AddCommitRow(summary, description))
+						.expect("Receiver should not have been dropped");
+				}
+
+				self.content_to_show = Content::BranchHistory;
 			}
 		}
 	}
+}
+
+enum Content {
+	NoRepository,
+	RepositoryWasSelected,
+	BranchHistory,
 }
 
 fn is_repository(path: &path::PathBuf) -> bool {

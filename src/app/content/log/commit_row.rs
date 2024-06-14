@@ -14,10 +14,15 @@ pub(crate) struct Init {
 	pub(crate) hash: git::Oid,
 }
 
+#[derive(Debug)]
+pub(crate) enum Input {
+	PrintHash,
+}
+
 #[relm4::factory(pub(crate))]
 impl FactoryComponent for Model {
 	type Init = Init;
-	type Input = ();
+	type Input = Input;
 	type Output = ();
 	type CommandOutput = ();
 	type ParentWidget = gtk::ListBox;
@@ -26,6 +31,17 @@ impl FactoryComponent for Model {
 		adw::ActionRow {
 			set_title?: &self.summary.as_ref().map(|s| glib::markup_escape_text(s)),
 			set_subtitle?: &self.description.as_ref().map(|d| glib::markup_escape_text(d)),
+
+			add_suffix = &gtk::Button {
+				set_icon_name: "copy-symbolic",
+				// TODO: Add top margin
+				// This button is right at the top
+				set_valign: gtk::Align::Start,
+
+				connect_clicked[sender] => move |_| {
+					sender.input(Self::Input::PrintHash);
+				},
+			},
 		}
 	}
 
@@ -42,13 +58,15 @@ impl FactoryComponent for Model {
 		_index: &Self::Index,
 		root: Self::Root,
 		_returned_widget: &<Self::ParentWidget as FactoryView>::ReturnedWidget,
-		_sender: FactorySender<Self>,
+		sender: FactorySender<Self>,
 	) -> Self::Widgets {
 		let widgets = view_output!();
 		widgets
 	}
 
 	fn update(&mut self, input: Self::Input, _sender: FactorySender<Self>) {
-		let () = input;
+		match input {
+			Self::Input::PrintHash => println!("Hash: {}", self.hash),
+		}
 	}
 }

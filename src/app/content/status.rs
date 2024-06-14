@@ -35,7 +35,7 @@ impl SimpleComponent for Model {
 	fn init(
 		_init: Self::Init,
 		root: Self::Root,
-		sender: ComponentSender<Self>,
+		_sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
 		let changed_files = FactoryVecDeque::builder()
 			.launch_default()
@@ -45,19 +45,15 @@ impl SimpleComponent for Model {
 		let changed_files_list_box = model.changed_files.widget();
 		let widgets = view_output!();
 
-		sender.input(Self::Input::AddChangedFileRow(String::from("File 1.rs")));
-		sender.input(Self::Input::AddChangedFileRow(String::from("File 2.rs")));
-		sender.input(Self::Input::AddChangedFileRow(String::from("File 3.rs")));
-
 		ComponentParts { model, widgets }
 	}
 
 	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
 		match message {
-			Input::AddChangedFileRow(file_name) => {
+			Input::AddChangedFileRow(file_path) => {
 				self.changed_files
 					.guard()
-					.push_back(changed_files_row::Init { name: file_name });
+					.push_back(changed_files_row::Init { file_path });
 			}
 		}
 	}

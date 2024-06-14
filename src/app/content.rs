@@ -136,7 +136,11 @@ impl SimpleComponent for Model {
 				let status = repo.statuses(Some(&mut options)).unwrap();
 
 				for entry in status.iter() {
-					println!("### {:?}, {:?}", entry.path().unwrap(), entry.status());
+					let file_name = entry.path().expect("File name should be valid UTF-8");
+					self.status
+						.sender()
+						.send(status::Input::AddChangedFileRow(String::from(file_name)))
+						.expect("Receiver should not have been dropped");
 				}
 
 				self.content_to_show = Content::Status;

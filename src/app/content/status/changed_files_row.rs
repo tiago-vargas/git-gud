@@ -2,11 +2,11 @@ use adw::prelude::*;
 use relm4::{factory::FactoryView, prelude::*};
 
 pub(crate) struct Model {
-	name: String,
+	file_path: String,
 }
 
 pub(crate) struct Init {
-	pub(crate) name: String,
+	pub(crate) file_path: String,
 }
 
 #[relm4::factory(pub(crate))]
@@ -20,13 +20,13 @@ impl FactoryComponent for Model {
 
 	view! {
 		adw::ActionRow {
-			set_title: &self.name,
+			set_title: &self.file_path,
 		}
 	}
 
 	fn init_model(init: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
 		Self {
-			name: init.name,
+			file_path: init.file_path,
 		}
 	}
 

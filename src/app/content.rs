@@ -17,9 +17,8 @@ pub(crate) struct Init;
 #[derive(Debug)]
 pub(crate) enum Input {
 	ShowOpenRepoDialog,
-	ShowStatus,
+	ShowStatus(path::PathBuf),
 	ShowLog(path::PathBuf, String),
-	PrintStatus(path::PathBuf),
 }
 
 #[derive(Debug)]
@@ -122,15 +121,24 @@ impl SimpleComponent for Model {
 								.expect("Folder was opened via file-chooser, so should have a path");
 							if is_repository(&path) {
 								sender
-									.output(Self::Output::Repository(path))
+									.output(Self::Output::Repository(path.clone()))
 									.expect("Receiver should not have been dropped");
-								sender.input(Self::Input::ShowStatus);
+								sender.input(Self::Input::ShowStatus(path));
 							}
 						}
 					},
 				)
 			}
-			Self::Input::ShowStatus => {
+			Self::Input::ShowStatus(path) => {
+				let repo = git::Repository::open(path).unwrap();
+				let mut options = git::StatusOptions::default();
+				options.include_untracked(true);
+				let status = repo.statuses(Some(&mut options)).unwrap();
+
+				for entry in status.iter() {
+					println!("### {:?}, {:?}", entry.path().unwrap(), entry.status());
+				}
+
 				self.content_to_show = Content::Status;
 			}
 			Self::Input::ShowLog(path, branch_name) => {
@@ -171,18 +179,6 @@ impl SimpleComponent for Model {
 				}
 
 				self.content_to_show = Content::BranchHistory;
-			}
-			Self::Input::PrintStatus(repo) => {
-				let repo = git::Repository::open(repo).unwrap();
-				let mut options = git::StatusOptions::default();
-				options.include_untracked(true);
-				let status = repo.statuses(Some(&mut options)).unwrap();
-
-				for entry in status.iter() {
-					println!("### {:?}, {:?}", entry.path().unwrap(), entry.status());
-				}
-
-				self.content_to_show = Content::Status;
 			}
 		}
 	}

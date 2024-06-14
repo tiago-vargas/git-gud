@@ -27,7 +27,7 @@ pub(crate) enum Input {
 	ListBranches,
 	AddBranchRow(String),
 	ShowLog(usize),
-	PrintStatus,
+	ShowStatus,
 }
 
 #[relm4::component(pub(crate))]
@@ -151,7 +151,7 @@ impl SimpleComponent for Model {
 				self.repository = Some(repo);
 				sender.input(Self::Input::SetHeaderBarSubtitle(path));
 				sender.input(Self::Input::ListBranches);
-				sender.input(Self::Input::PrintStatus);
+				sender.input(Self::Input::ShowStatus);
 			}
 			Self::Input::SetHeaderBarSubtitle(path) => {
 				self.header_bar_subtitle = path
@@ -198,12 +198,12 @@ impl SimpleComponent for Model {
 					))
 					.expect("Receiver should not have been dropped");
 			}
-			Self::Input::PrintStatus => {
+			Self::Input::ShowStatus => {
 				let path = self.repository.as_ref().unwrap().path();
 				let path = path::PathBuf::from(path);
 				self.content
 					.sender()
-					.send(content::Input::PrintStatus(path))
+					.send(content::Input::ShowStatus(path))
 					.unwrap();
 				}
 		}

@@ -6,7 +6,7 @@ pub(crate) struct Model {
 }
 
 pub(crate) struct Init {
-	name: String,
+	pub(crate) name: String,
 }
 
 #[relm4::factory(pub(crate))]

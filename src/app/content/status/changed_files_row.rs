@@ -20,7 +20,8 @@ impl FactoryComponent for Model {
 
 	view! {
 		adw::ActionRow {
-			set_title: &self.file_path,
+			set_title: file_name(&self.file_path),
+			set_subtitle: &self.file_path,
 		}
 	}
 
@@ -44,4 +45,12 @@ impl FactoryComponent for Model {
 	fn update(&mut self, message: Self::Input, _sender: FactorySender<Self>) {
 		let () = message;
 	}
+}
+
+fn file_name(path: &str) -> &str {
+	std::path::Path::new(path)
+		.file_name()
+		.expect("File should have a name")
+		.to_str()
+		.expect("Name should be valid UTF-8")
 }

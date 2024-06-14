@@ -76,18 +76,31 @@ impl SimpleComponent for Model {
 								set_icon_name: "open-menu-symbolic",
 								set_menu_model: Some(&primary_menu),
 							},
+
+							#[wrap(Some)]
+							set_title_widget = &adw::ViewSwitcher {
+								set_stack: Some(&stack),
+							},
 						},
 
-						gtk::ScrolledWindow {
-							#[local_ref]
-							branch_list_box -> gtk::ListBox {
-								add_css_class: "navigation-sidebar",
+						#[local_ref]
+						stack -> adw::ViewStack {
+							add_titled[None, "Status"] = &adw::StatusPage {
+								set_title: "Status",
+								set_description: Some("Status of the repository."),
+							},
 
-								connect_row_selected[sender] => move |_this, row| {
-									if let Some(row) = row {
-										sender.input(Self::Input::ShowLog(row.index() as usize));
+							add_titled[None, "Branches"] = &gtk::ScrolledWindow {
+								#[local_ref]
+								branch_list_box -> gtk::ListBox {
+									add_css_class: "navigation-sidebar",
+
+									connect_row_selected[sender] => move |_this, row| {
+										if let Some(row) = row {
+											sender.input(Self::Input::ShowLog(row.index() as usize));
+										}
 									}
-								}
+								},
 							},
 						},
 					},
@@ -134,6 +147,7 @@ impl SimpleComponent for Model {
 			content,
 		};
 
+		let stack = adw::ViewStack::default();
 		let branch_list_box = model.branches.widget();
 		let widgets = view_output!();
 

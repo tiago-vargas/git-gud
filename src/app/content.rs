@@ -15,7 +15,7 @@ pub(crate) struct Init;
 #[derive(Debug)]
 pub(crate) enum Input {
 	ShowOpenRepoDialog,
-	IndicateRepositoryWasSelected,
+	ShowStatus,
 	ShowLog(path::PathBuf, String),
 	PrintStatus(path::PathBuf),
 }
@@ -34,12 +34,6 @@ impl SimpleComponent for Model {
 	view! {
 		adw::Bin {
 			match model.content_to_show {
-				Content::RepositoryWasSelected => {
-					adw::StatusPage {
-						set_title: "Stub Page",
-						set_description: Some("Repository was selected."),
-					}
-				}
 				Content::NoRepository => {
 					adw::StatusPage {
 						set_icon_name: Some("folder-symbolic"),
@@ -65,6 +59,13 @@ impl SimpleComponent for Model {
 				Content::BranchHistory => {
 					adw::Bin {
 						model.branch_history.widget(),
+					}
+				}
+				Content::Status => {
+					// TODO: Implement page
+					adw::StatusPage {
+						set_title: "Status",
+						set_description: Some("Status of the repository."),
 					}
 				}
 			}
@@ -119,14 +120,14 @@ impl SimpleComponent for Model {
 								sender
 									.output(Self::Output::Repository(path))
 									.expect("Receiver should not have been dropped");
-								sender.input(Self::Input::IndicateRepositoryWasSelected);
+								sender.input(Self::Input::ShowStatus);
 							}
 						}
 					},
 				)
 			}
-			Self::Input::IndicateRepositoryWasSelected => {
-				self.content_to_show = Content::RepositoryWasSelected;
+			Self::Input::ShowStatus => {
+				self.content_to_show = Content::Status;
 			}
 			Self::Input::ShowLog(path, branch_name) => {
 				self.branch_history
@@ -176,6 +177,8 @@ impl SimpleComponent for Model {
 				for entry in status.iter() {
 					println!("### {:?}, {:?}", entry.path().unwrap(), entry.status());
 				}
+
+				self.content_to_show = Content::Status;
 			}
 		}
 	}
@@ -183,8 +186,8 @@ impl SimpleComponent for Model {
 
 enum Content {
 	NoRepository,
-	RepositoryWasSelected,
 	BranchHistory,
+	Status,
 }
 
 fn is_repository(path: &path::PathBuf) -> bool {

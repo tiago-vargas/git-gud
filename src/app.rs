@@ -16,6 +16,7 @@ pub(crate) struct Model {
 	repository: Option<git::Repository>,
 	branches: FactoryVecDeque<branch_row::Model>,
 	content: Controller<content::Model>,
+	status: Controller<content::status::Model>,
 }
 
 pub(crate) struct Init;
@@ -85,9 +86,8 @@ impl SimpleComponent for Model {
 
 						#[local_ref]
 						stack -> adw::ViewStack {
-							add_titled[None, "Status"] = &adw::StatusPage {
-								set_title: "Status",
-								set_description: Some("Status of the repository."),
+							add_titled[None, "Status"] = &adw::Bin {
+								model.status.widget(),
 							},
 
 							add_titled[None, "Branches"] = &gtk::ScrolledWindow {
@@ -99,7 +99,7 @@ impl SimpleComponent for Model {
 										if let Some(row) = row {
 											sender.input(Self::Input::ShowLog(row.index() as usize));
 										}
-									}
+									},
 								},
 							},
 						},
@@ -131,6 +131,9 @@ impl SimpleComponent for Model {
 		window: Self::Root,
 		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
+		let status = content::status::Model::builder()
+			.launch(content::status::Init)
+			.detach();
 		let branches = FactoryVecDeque::builder()
 			.launch_default()
 			.detach();
@@ -143,6 +146,7 @@ impl SimpleComponent for Model {
 		let model = Model {
 			header_bar_subtitle: placeholder_subtitle,
 			repository: None,
+			status,
 			branches,
 			content,
 		};
@@ -215,11 +219,23 @@ impl SimpleComponent for Model {
 			Self::Input::ShowStatus => {
 				let path = self.repository.as_ref().unwrap().path();
 				let path = path::PathBuf::from(path);
-				self.content
-					.sender()
-					.send(content::Input::ShowStatus(path))
-					.unwrap();
+				let repo = git::Repository::open(path).unwrap();
+				let mut options = git::StatusOptions::default();
+				options.include_untracked(true);
+				let status = repo.statuses(Some(&mut options)).unwrap();
+
+				for entry in status.iter() {
+					let status = entry.status();
+					let file_name = entry.path().expect("File name should be valid UTF-8");
+					self.status
+						.sender()
+						.send(content::status::Input::AddChangedFileRow(
+							String::from(file_name),
+							status,
+						))
+						.expect("Receiver should not have been dropped");
 				}
+			}
 		}
 	}
 

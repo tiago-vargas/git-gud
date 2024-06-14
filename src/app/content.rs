@@ -4,11 +4,10 @@ use relm4::prelude::*;
 use std::path;
 
 mod log;
-mod status;
+pub(crate) mod status;
 
 pub(crate) struct Model {
 	content_to_show: Content,
-	status: Controller<status::Model>,
 	branch_history: Controller<log::Model>,
 }
 
@@ -17,7 +16,6 @@ pub(crate) struct Init;
 #[derive(Debug)]
 pub(crate) enum Input {
 	ShowOpenRepoDialog,
-	ShowStatus(path::PathBuf),
 	ShowLog(path::PathBuf, String),
 }
 
@@ -62,11 +60,6 @@ impl SimpleComponent for Model {
 						model.branch_history.widget(),
 					}
 				}
-				Content::Status => {
-					adw::Bin {
-						model.status.widget(),
-					}
-				}
 			}
 		}
 	}
@@ -76,14 +69,10 @@ impl SimpleComponent for Model {
 		root: Self::Root,
 		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
-		let status = status::Model::builder()
-			.launch(status::Init)
-			.detach();
 		let branch_history = log::Model::builder()
 			.launch(log::Init)
 			.detach();
 		let model = Self {
-			status,
 			content_to_show: Content::NoRepository,
 			branch_history,
 		};
@@ -127,26 +116,6 @@ impl SimpleComponent for Model {
 						}
 					},
 				)
-			}
-			Self::Input::ShowStatus(path) => {
-				let repo = git::Repository::open(path).unwrap();
-				let mut options = git::StatusOptions::default();
-				options.include_untracked(true);
-				let status = repo.statuses(Some(&mut options)).unwrap();
-
-				for entry in status.iter() {
-					let status = entry.status();
-					let file_name = entry.path().expect("File name should be valid UTF-8");
-					self.status
-						.sender()
-						.send(status::Input::AddChangedFileRow(
-							String::from(file_name),
-							status,
-						))
-						.expect("Receiver should not have been dropped");
-				}
-
-				self.content_to_show = Content::Status;
 			}
 			Self::Input::ShowLog(path, branch_name) => {
 				self.branch_history
@@ -194,7 +163,6 @@ impl SimpleComponent for Model {
 enum Content {
 	NoRepository,
 	BranchHistory,
-	Status,
 }
 
 fn is_repository(path: &path::PathBuf) -> bool {

@@ -4,9 +4,11 @@ use relm4::prelude::*;
 use std::path;
 
 mod log;
+mod status;
 
 pub(crate) struct Model {
 	content_to_show: Content,
+	status: Controller<status::Model>,
 	branch_history: Controller<log::Model>,
 }
 
@@ -62,10 +64,8 @@ impl SimpleComponent for Model {
 					}
 				}
 				Content::Status => {
-					// TODO: Implement page
-					adw::StatusPage {
-						set_title: "Status",
-						set_description: Some("Status of the repository."),
+					adw::Bin {
+						model.status.widget(),
 					}
 				}
 			}
@@ -77,10 +77,14 @@ impl SimpleComponent for Model {
 		root: Self::Root,
 		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
+		let status = status::Model::builder()
+			.launch(status::Init)
+			.detach();
 		let branch_history = log::Model::builder()
 			.launch(log::Init)
 			.detach();
 		let model = Self {
+			status,
 			content_to_show: Content::NoRepository,
 			branch_history,
 		};

@@ -123,7 +123,6 @@ impl SimpleComponent for Model {
 								sender
 									.output(Self::Output::Repository(path.clone()))
 									.expect("Receiver should not have been dropped");
-								sender.input(Self::Input::ShowStatus(path));
 							}
 						}
 					},

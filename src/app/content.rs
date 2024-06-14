@@ -158,9 +158,10 @@ impl SimpleComponent for Model {
 
 					let summary = commit.summary().map(String::from);
 					let description = commit.body().map(String::from);
+					let hash = id;
 					self.branch_history
 						.sender()
-						.send(log::Input::AddCommitRow(summary, description))
+						.send(log::Input::AddCommitRow(summary, description, hash))
 						.expect("Receiver should not have been dropped");
 				}
 

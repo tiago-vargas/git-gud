@@ -5,11 +5,13 @@ use relm4::{factory::FactoryView, prelude::*};
 pub(crate) struct Model {
 	summary: Option<String>,
 	description: Option<String>,
+	hash: git::Oid,
 }
 
 pub(crate) struct Init {
 	pub(crate) summary: Option<String>,
 	pub(crate) description: Option<String>,
+	pub(crate) hash: git::Oid,
 }
 
 #[relm4::factory(pub(crate))]
@@ -31,6 +33,7 @@ impl FactoryComponent for Model {
 		Self {
 			summary: init.summary,
 			description: init.description,
+			hash: init.hash,
 		}
 	}
 

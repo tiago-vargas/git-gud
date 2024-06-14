@@ -12,7 +12,7 @@ pub(crate) struct Init;
 #[derive(Debug)]
 pub(crate) enum Input {
 	ClearList,
-	AddCommitRow(Option<String>, Option<String>),
+	AddCommitRow(Option<String>, Option<String>, git::Oid),
 }
 
 #[relm4::component(pub(crate))]
@@ -59,10 +59,11 @@ impl SimpleComponent for Model {
 	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
 		match message {
 			Self::Input::ClearList => self.commits.guard().clear(),
-			Self::Input::AddCommitRow(summary, description) => {
+			Self::Input::AddCommitRow(summary, description, hash) => {
 				let row = commit_row::Init {
 					summary,
 					description,
+					hash
 				};
 				self.commits.guard().push_back(row);
 			}

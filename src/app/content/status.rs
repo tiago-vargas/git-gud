@@ -1,6 +1,10 @@
-use relm4::prelude::*;
+use relm4::{factory::FactoryVecDeque, prelude::*};
 
-pub(crate) struct Model;
+mod changed_files_row;
+
+pub(crate) struct Model {
+	changed_files: FactoryVecDeque<changed_files_row::Model>,
+}
 
 pub(crate) struct Init;
 
@@ -22,8 +26,13 @@ impl SimpleComponent for Model {
 		root: Self::Root,
 		_sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
-		let model = Self;
+		let changed_files = FactoryVecDeque::builder()
+			.launch_default()
+			.detach();
+		let model = Self { changed_files };
+
 		let widgets = view_output!();
+
 		ComponentParts { model, widgets }
 	}
 

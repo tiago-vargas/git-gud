@@ -136,10 +136,14 @@ impl SimpleComponent for Model {
 				let status = repo.statuses(Some(&mut options)).unwrap();
 
 				for entry in status.iter() {
+					let status = entry.status();
 					let file_name = entry.path().expect("File name should be valid UTF-8");
 					self.status
 						.sender()
-						.send(status::Input::AddChangedFileRow(String::from(file_name)))
+						.send(status::Input::AddChangedFileRow(
+							String::from(file_name),
+							status,
+						))
 						.expect("Receiver should not have been dropped");
 				}
 

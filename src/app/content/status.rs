@@ -11,7 +11,7 @@ pub(crate) struct Init;
 
 #[derive(Debug)]
 pub(crate) enum Input {
-	AddChangedFileRow(String),
+	AddChangedFileRow(String, git::Status),
 }
 
 #[relm4::component(pub(crate))]
@@ -50,10 +50,12 @@ impl SimpleComponent for Model {
 
 	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
 		match message {
-			Input::AddChangedFileRow(file_path) => {
-				self.changed_files
-					.guard()
-					.push_back(changed_files_row::Init { file_path });
+			Input::AddChangedFileRow(file_path, file_status) => {
+				let row = changed_files_row::Init {
+					file_path,
+					file_status,
+				};
+				self.changed_files.guard().push_back(row);
 			}
 		}
 	}

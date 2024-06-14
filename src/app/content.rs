@@ -3,11 +3,13 @@ use relm4::prelude::*;
 
 use std::path;
 
+mod diff;
 mod log;
 
 pub(crate) struct Model {
 	content_to_show: Content,
 	branch_history: Controller<log::Model>,
+	commit_diff: Controller<diff::Model>,
 }
 
 pub(crate) struct Init;
@@ -17,6 +19,7 @@ pub(crate) enum Input {
 	ShowOpenRepoDialog,
 	IndicateRepositoryWasSelected,
 	ShowLog(path::PathBuf, String),
+	ShowFakeDiff(git::Oid),
 }
 
 #[derive(Debug)]
@@ -66,6 +69,11 @@ impl SimpleComponent for Model {
 						model.branch_history.widget(),
 					}
 				}
+				Content::Diff => {
+					adw::Bin {
+						model.commit_diff.widget(),
+					}
+				},
 			}
 		}
 	}
@@ -77,10 +85,16 @@ impl SimpleComponent for Model {
 	) -> ComponentParts<Self> {
 		let branch_history = log::Model::builder()
 			.launch(log::Init)
+			.forward(sender.input_sender(), |output| match output {
+				log::Output::ShowFakeDiff(hash) => Self::Input::ShowFakeDiff(hash),
+			});
+		let commit_diff = diff::Model::builder()
+			.launch(diff::Init)
 			.detach();
 		let model = Self {
 			content_to_show: Content::NoRepository,
 			branch_history,
+			commit_diff,
 		};
 
 		let widgets = view_output!();
@@ -167,6 +181,14 @@ impl SimpleComponent for Model {
 
 				self.content_to_show = Content::BranchHistory;
 			}
+			Self::Input::ShowFakeDiff(hash) => {
+				self.commit_diff
+					.sender()
+					.send(diff::Input::ShowFakeDiff(hash))
+					.expect("Receiver should not have been dropped");
+
+				self.content_to_show = Content::Diff;
+			}
 		}
 	}
 }
@@ -175,6 +197,7 @@ enum Content {
 	NoRepository,
 	RepositoryWasSelected,
 	BranchHistory,
+	Diff,
 }
 
 fn is_repository(path: &path::PathBuf) -> bool {

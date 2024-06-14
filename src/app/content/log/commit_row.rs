@@ -5,7 +5,7 @@ use relm4::{factory::FactoryView, prelude::*};
 pub(crate) struct Model {
 	summary: Option<String>,
 	description: Option<String>,
-	hash: git::Oid,
+	pub(crate) hash: git::Oid,
 }
 
 pub(crate) struct Init {
@@ -28,7 +28,7 @@ impl FactoryComponent for Model {
 	type ParentWidget = gtk::ListBox;
 
 	view! {
-		adw::ActionRow {
+		adw::ExpanderRow {
 			set_title?: &self.summary.as_ref().map(|s| glib::markup_escape_text(s)),
 			set_subtitle?: &self.description.as_ref().map(|d| glib::markup_escape_text(d)),
 
@@ -41,6 +41,11 @@ impl FactoryComponent for Model {
 				connect_clicked[sender] => move |_| {
 					sender.input(Self::Input::PrintHash);
 				},
+			},
+
+			add_row = &gtk::Label {
+				// set_markup: Some(&format!("<b>{}</b>", self.hash)),
+				// set_xalign: 0.0,
 			},
 		}
 	}

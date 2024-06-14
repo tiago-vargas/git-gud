@@ -13,13 +13,19 @@ pub(crate) struct Init;
 pub(crate) enum Input {
 	ClearList,
 	AddCommitRow(Option<String>, Option<String>, git::Oid),
+	ShowFakeDiff(usize),
+}
+
+#[derive(Debug)]
+pub(crate) enum Output {
+	ShowFakeDiff(git::Oid),
 }
 
 #[relm4::component(pub(crate))]
 impl SimpleComponent for Model {
 	type Init = Init;
 	type Input = Input;
-	type Output = ();
+	type Output = Output;
 
 	view! {
 		gtk::ScrolledWindow {
@@ -34,6 +40,12 @@ impl SimpleComponent for Model {
 					#[local_ref]
 					commits_list_box -> gtk::ListBox {
 						add_css_class: "boxed-list",
+
+						connect_row_selected[sender] => move |_, row| {
+							if let Some(row) = row {
+								sender.input(Self::Input::ShowFakeDiff(row.index() as usize));
+							}
+						},
 					},
 				},
 			},
@@ -43,7 +55,7 @@ impl SimpleComponent for Model {
 	fn init(
 		_init: Self::Init,
 		root: Self::Root,
-		_sender: ComponentSender<Self>,
+		sender: ComponentSender<Self>,
 	) -> ComponentParts<Self> {
 		let commits = FactoryVecDeque::builder()
 			.launch_default()
@@ -56,7 +68,7 @@ impl SimpleComponent for Model {
 		ComponentParts { model, widgets }
 	}
 
-	fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+	fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
 		match message {
 			Self::Input::ClearList => self.commits.guard().clear(),
 			Self::Input::AddCommitRow(summary, description, hash) => {
@@ -66,6 +78,17 @@ impl SimpleComponent for Model {
 					hash
 				};
 				self.commits.guard().push_back(row);
+			}
+			Self::Input::ShowFakeDiff(index) => {
+				let commit_hash = self
+					.commits
+					.guard()
+					.get(index)
+					.expect("Index should've been gotten from a list row")
+					.hash;
+				sender
+					.output(Self::Output::ShowFakeDiff(commit_hash))
+					.expect("Receiver should not have been dropped");
 			}
 		}
 	}

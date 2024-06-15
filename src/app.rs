@@ -222,6 +222,7 @@ impl SimpleComponent for Model {
 				let repo = git::Repository::open(path).unwrap();
 				let mut options = git::StatusOptions::default();
 				options.include_untracked(true);
+				options.recurse_untracked_dirs(true);
 				let status = repo.statuses(Some(&mut options)).unwrap();
 
 				for entry in status.iter() {

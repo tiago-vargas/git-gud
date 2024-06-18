@@ -66,21 +66,18 @@ fn label_from_status(status: &git::Status) -> &str {
 	match *status {
 		git::Status::CURRENT => "CURRENT",
 
-		git::Status::INDEX_NEW => "INDEX_NEW",
-		git::Status::INDEX_MODIFIED => "INDEX_MODIFIED",
-		git::Status::INDEX_DELETED => "INDEX_DELETED",
-		git::Status::INDEX_RENAMED => "INDEX_RENAMED",
-		git::Status::INDEX_TYPECHANGE => "INDEX_TYPECHANGE",
+		git::Status::INDEX_NEW => "A",
+		git::Status::WT_NEW => "U",
+		git::Status::INDEX_MODIFIED | git::Status::WT_MODIFIED => "M",
+		git::Status::INDEX_DELETED | git::Status::WT_DELETED => "D",
+		git::Status::INDEX_RENAMED | git::Status::WT_RENAMED => "R",
+		// git::Status::INDEX_TYPECHANGE => "INDEX_TYPECHANGE",
+		// git::Status::WT_TYPECHANGE => "WT_TYPECHANGE",
 
-		git::Status::WT_NEW => "WT_NEW",
-		git::Status::WT_MODIFIED => "WT_MODIFIED",
-		git::Status::WT_DELETED => "WT_DELETED",
-		git::Status::WT_TYPECHANGE => "WT_TYPECHANGE",
-		git::Status::WT_RENAMED => "WT_RENAMED",
+		// git::Status::IGNORED => "IGNORED",
+		git::Status::CONFLICTED => "!",
 
-		git::Status::IGNORED => "IGNORED",
-		git::Status::CONFLICTED => "CONFLICTED",
-
-		other => unimplemented!("Status not listed as `git::Status` variant: {other:?}"),
+		// other => unimplemented!("Status not listed as `git::Status` variant: {other:?}"),
+		other => todo!("Status not supported yet: {other:?}"),
 	}
 }

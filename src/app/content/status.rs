@@ -21,14 +21,29 @@ impl SimpleComponent for Model {
 	type Output = ();
 
 	view! {
-		adw::StatusPage {
-			set_title: "Status",
-			set_description: Some("Status of the repository."),
+		adw::Bin {
+			if model.changed_files.is_empty() {
+				adw::StatusPage {
+					set_icon_name: Some("check-round-outline"),  // FIXME: "Unkwown icon"
+					set_title: "No changes",
+					set_description: Some("Working tree clean."),
+				}
+			} else {
+				gtk::ScrolledWindow {
+					gtk::Box {
+						// This `Box` prevents the list background from being the size of the whole view.
+						// It's only noticeable in small enough lists.
+						set_orientation: gtk::Orientation::Vertical,
 
-			#[local_ref]
-			changed_files_list_box -> gtk::ListBox {
-				add_css_class: "boxed-list",
-			},
+						set_margin_all: 12,
+
+						#[local_ref]
+						changed_files_list_box -> gtk::ListBox {
+							add_css_class: "boxed-list",
+						},
+					},
+				}
+			}
 		}
 	}
 

@@ -9,3 +9,21 @@ install_data(
 	symbolic_dir / ('@0@-symbolic.svg').format(application_id),
 	install_dir: get_option('datadir') / 'icons' / symbolic_dir
 )
+
+icons = [
+	'conflicted',
+	'index-new',
+	'wt-deleted',
+	'wt-modified',
+	'wt-modified',
+	'wt-new',
+	'wt-renamed',
+]
+
+symbolic_dir = 'hicolor' / 'symbolic' / 'actions'
+foreach icon : icons
+	install_data(
+		symbolic_dir / ('@0@-@1@-symbolic.svg').format(application_id, icon),
+		install_dir: get_option('datadir') / 'icons' / symbolic_dir
+	)
+endforeach

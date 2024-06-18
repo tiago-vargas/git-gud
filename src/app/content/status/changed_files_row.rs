@@ -25,8 +25,16 @@ impl FactoryComponent for Model {
 			set_title: file_name(&self.file_path),
 			set_subtitle: &self.file_path,
 
-			add_suffix = &gtk::Label {
-				set_label: label_from_status(&self.file_status),
+			add_suffix = &gtk::Image {
+				set_from_icon_name: Some(&icon_name_from_status(&self.file_status)),
+				// set_from_resource: Some(&icon_name_from_status(&self.file_status)),
+
+				// DEBUG
+				connect_map => move |this| {
+					let icon_name = this.icon_name();
+					println!("ICON: {icon_name:?}");
+					println!();
+				},
 			},
 		}
 	}
@@ -62,25 +70,32 @@ fn file_name(path: &str) -> &str {
 		.expect("Name should be valid UTF-8")
 }
 
-fn label_from_status(status: &git::Status) -> &str {
+fn icon_name_from_status(status: &git::Status) -> String {
+	// let prefix = String::from("/com/github/tiago_vargas/git_gud/icons/hicolor/symbolic/actions/");
+	let prefix = String::from("com.github.tiago_vargas.git_gud-");
+	// let prefix = String::from("");
+	// let suffix = ".svg";
+	let suffix = "";
+
+	println!("STATUS: {status:?}");
+
 	match *status {
-		git::Status::CURRENT => "CURRENT",
+		git::Status::INDEX_NEW => prefix + "index-new-symbolic" + suffix,
+		git::Status::INDEX_MODIFIED => prefix + "wt-modified-symbolic" + suffix,  // TEMP
+		// git::Status::INDEX_DELETED => "INDEX_DELETED",
+		// git::Status::INDEX_RENAMED => "INDEX_RENAMED",
 
-		git::Status::INDEX_NEW => "INDEX_NEW",
-		git::Status::INDEX_MODIFIED => "INDEX_MODIFIED",
-		git::Status::INDEX_DELETED => "INDEX_DELETED",
-		git::Status::INDEX_RENAMED => "INDEX_RENAMED",
-		git::Status::INDEX_TYPECHANGE => "INDEX_TYPECHANGE",
+		// WORKS!
+		git::Status::WT_NEW => prefix + "wt-new-symbolic" + suffix,
+		// git::Status::WT_NEW => "wt-new-symbolic",
+		git::Status::WT_MODIFIED => prefix + "wt-modified-symbolic" + suffix,
+		git::Status::WT_DELETED => prefix + "wt-deleted-symbolic" + suffix,
+		// git::Status::WT_TYPECHANGE => "WT_TYPECHANGE",
+		git::Status::WT_RENAMED => prefix + "wt-renamed-symbolic" + suffix,
 
-		git::Status::WT_NEW => "WT_NEW",
-		git::Status::WT_MODIFIED => "WT_MODIFIED",
-		git::Status::WT_DELETED => "WT_DELETED",
-		git::Status::WT_TYPECHANGE => "WT_TYPECHANGE",
-		git::Status::WT_RENAMED => "WT_RENAMED",
+		git::Status::CONFLICTED => prefix + "conflicted-symbolic" + suffix,
 
-		git::Status::IGNORED => "IGNORED",
-		git::Status::CONFLICTED => "CONFLICTED",
-
-		other => unimplemented!("Status not listed as `git::Status` variant: {other:?}"),
+		// other => todo!("No icon for {other:#?} yet"),
+		_other => prefix + "conflicted-symbolic" + suffix,  // TEMP
 	}
 }

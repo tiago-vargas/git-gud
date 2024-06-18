@@ -25,6 +25,10 @@ impl FactoryComponent for Model {
 			set_title: file_name(&self.file_path),
 			set_subtitle: &self.file_path,
 
+			set_title_lines: 1,
+			set_subtitle_lines: 1,
+			set_tooltip: &self.file_path,
+
 			add_suffix = &gtk::Label {
 				set_label: label_from_status(&self.file_status),
 			},

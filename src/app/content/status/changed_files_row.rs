@@ -30,7 +30,9 @@ impl FactoryComponent for Model {
 			set_tooltip: &self.file_path,
 
 			add_suffix = &gtk::Label {
-				set_label: label_from_status(&self.file_status),
+				set_label: &label_from_status(&self.file_status),
+				add_css_class: "monospace",
+				set_tooltip: &format!("{:?}", &self.file_status),
 			},
 		}
 	}
@@ -66,22 +68,35 @@ fn file_name(path: &str) -> &str {
 		.expect("Name should be valid UTF-8")
 }
 
-fn label_from_status(status: &git::Status) -> &str {
-	match *status {
-		git::Status::CURRENT => "CURRENT",
+fn label_from_status(status: &git::Status) -> String {
+	let mut tuple = ("_", "_");
 
-		git::Status::INDEX_NEW => "A",
-		git::Status::WT_NEW => "U",
-		git::Status::INDEX_MODIFIED | git::Status::WT_MODIFIED => "M",
-		git::Status::INDEX_DELETED | git::Status::WT_DELETED => "D",
-		git::Status::INDEX_RENAMED | git::Status::WT_RENAMED => "R",
-		// git::Status::INDEX_TYPECHANGE => "INDEX_TYPECHANGE",
-		// git::Status::WT_TYPECHANGE => "WT_TYPECHANGE",
-
-		// git::Status::IGNORED => "IGNORED",
-		git::Status::CONFLICTED => "!",
-
-		// other => unimplemented!("Status not listed as `git::Status` variant: {other:?}"),
-		other => todo!("Status not supported yet: {other:?}"),
+	if status.contains(git::Status::INDEX_MODIFIED) {
+		tuple.0 = "M";
+	} else if status.contains(git::Status::INDEX_TYPECHANGE) {
+		tuple.0 = "T";
+	} else if status.contains(git::Status::INDEX_NEW) {
+		tuple.0 = "A";
+	} else if status.contains(git::Status::INDEX_DELETED) {
+		tuple.0 = "D";
+	} else if status.contains(git::Status::INDEX_RENAMED) {
+		tuple.0 = "R";
+	// TODO: Copied in index
+	} else if status.contains(git::Status::WT_MODIFIED) {
+		tuple.1 = "M";
+	} else if status.contains(git::Status::WT_TYPECHANGE) {
+		tuple.1 = "T";
+	} else if status.contains(git::Status::WT_DELETED) {
+		tuple.1 = "D";
+	} else if status.contains(git::Status::WT_RENAMED) {
+		tuple.1 = "R";
+	// TODO: Copied in work tree
+	} else if status.contains(git::Status::IGNORED) {
+		tuple = ("!", "!");
+	} else {
+		// Untracked
+		tuple = ("?", "?");
 	}
+
+	format!("{}{}", tuple.0, tuple.1)
 }
